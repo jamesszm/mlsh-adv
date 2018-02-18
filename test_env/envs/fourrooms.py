@@ -1,123 +1,134 @@
 """
-Classic cart-pole system implemented by Rich Sutton et al.
-Copied from https://webdocs.cs.ualberta.ca/~sutton/book/code/pole.c
+A classic four room problem described in intro to RL book chap 9.
+Code adapted from frozen lake environment.
 """
 
+import numpy as np
 import logging
 import math
 import gym
+import sys
 from gym import spaces
 from gym.utils import seeding
-import numpy as np
-from test_env.envs.discrete_env import DiscreteEnv
+from gym import utils
+from gym.envs.toy_text import discrete
 
 logger = logging.getLogger(__name__)
 
+LEFT = 0
+DOWN = 1
+RIGHT = 2
+UP = 3
 
-class Fourrooms(DiscreteEnv):
+MAPS = {
+    "9x9": [
+        "XXGXXXXXX",
+        "XOOOXOOOX",
+        "XOOOOOOOX",
+        "XOOOXOOOX",
+        "XXOXXXOXX",
+        "XOOOXOOOX",
+        "XOOOOOOOX",
+        "XOOOXSOOX",
+        "XXXXXXXXX",
+    ],
+}
+
+
+class Fourrooms(discrete.DiscreteEnv):
+    """
+    The agent must go through the doors to exit. 
+    An example of a 9X9 world would be:
+
+    XXGXXXXXX
+    XOOOXOOOX
+    XOOOOOOOX
+    XOOOXOOOX
+    XXOXXXOXX
+    XOOOXOOOX
+    XOOOOOOOX
+    XOOOXSOOX
+    XXXXXXXXX
+
+    S : starting point
+    X : Walls
+    G : goal 
+    O : Normal floor
+
+    """
     metadata = {
         'render.modes': ['human', 'rgb_array'],
         'video.frames_per_second': 50
     }
 
-    def __init__(self):
-        self.realgoal = 68
+    def __init__(self, desc=None, map_name="9x9"):
+        if desc is None and map_name is None:
+            raise ValueError('Must provide either desc or map_name')
+        elif desc is None:
+            desc = MAPS[map_name]
+        self.desc = desc = np.asarray(desc, dtype='c')
+        self.nrow, self.ncol = nrow, ncol = desc.shape
 
-        layout = """\
-wwwwwwwwwwwww
-w     w     w
-w     w     w
-w           w
-w     w     w
-w     w     w
-ww wwww     w
-w     www www
-w     w     w
-w     w     w
-w           w
-w     w     w
-wwwwwwwwwwwww
-"""
-        self.occupancy = np.array([
-            list(map(lambda c: 1 if c == 'w' else 0, line))
-            for line in layout.splitlines()
-        ])
+        nA = 4
+        nS = nrow * ncol
 
-        # From any state the agent can perform one of four actions, up, down, left or right
-        self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Discrete(np.sum(self.occupancy == 0))
+        isd = np.array(desc == b'S').astype('float64').ravel()
+        isd /= isd.sum()
+        P = {s: {a: [] for a in range(nA)} for s in range(nS)}
 
-        self.directions = [
-            np.array((-1, 0)),
-            np.array((1, 0)),
-            np.array((0, -1)),
-            np.array((0, 1))
-        ]
-        self.rng = np.random.RandomState(1234)
+        def to_s(row, col):
+            return row * ncol + col
 
-        self.tostate = {}
-        statenum = 0
-        for i in range(13):
-            for j in range(13):
-                if self.occupancy[i, j] == 0:
-                    self.tostate[(i, j)] = statenum
-                    statenum += 1
-        self.tocell = {v: k for k, v in self.tostate.items()}
+        def inc(row, col, a):
+            orig_row = row
+            orig_col = col
+            if a == 0:  # left
+                col = max(col - 1, 0)
+            elif a == 1:  # down
+                row = min(row + 1, nrow - 1)
+            elif a == 2:  # right
+                col = min(col + 1, ncol - 1)
+            elif a == 3:  # up
+                row = max(row - 1, 0)
+            is_wall = desc[row][col] == b'X'
+            if is_wall:
+                return (orig_row, orig_col)
+            return (row, col)
 
-    def randomizeCorrect(self):
-        # self.realgoal = np.random.choice([68, 69, 70, 71, 72, 78, 79, 80, 81, 82, 88, 89, 90, 91, 92, 93, 99, 100, 101, 102, 103])
-        self.realgoal = np.random.choice([68, 80, 90, 103])
-        self.realgoal = 103
-        pass
+        for row in range(nrow):
+            for col in range(ncol):
+                s = to_s(row, col)
+                for a in range(4):
+                    li = P[s][a]
+                    letter = desc[row, col]
+                    if letter in b'G':
+                        li.append((1.0, s, 0, True))
+                    else:
+                        # TODO(yejiayu): Add stochastic case.
+                        newrow, newcol = inc(row, col, a)
+                        newstate = to_s(newrow, newcol)
+                        newletter = desc[newrow, newcol]
+                        done = bytes(newletter) in b'GH'
+                        rew = float(newletter == b'G')
+                        li.append((1.0, newstate, rew, done))
 
-    def _seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
-
-    def empty_around(self, cell):
-        avail = []
-        for action in range(self.action_space.n):
-            nextcell = tuple(cell + self.directions[action])
-            if not self.occupancy[nextcell]:
-                avail.append(nextcell)
-        return avail
-
-    def reset(self):
-        state = 62
-        self.currentcell = self.tocell[state]
-
-        # statevec = np.zeros(104)
-        # statevec[state] = 1
-        # return statevec
-
-        return state
-
-    def step(self, action):
-        """
-        The agent can perform one of four actions,
-        up, down, left or right, which have a stochastic effect. With probability 2/3, the actions
-        cause the agent to move one cell in the corresponding direction, and with probability 1/3,
-        the agent moves instead in one of the other three directions, each with 1/9 probability. In
-        either case, if the movement would take the agent into a wall then the agent remains in the
-        same cell.
-        We consider a case in which rewards are zero on all state transitions.
-        """
-        nextcell = tuple(self.currentcell + self.directions[action])
-        if not self.occupancy[nextcell]:
-            self.currentcell = nextcell
-            if self.rng.uniform() < 1 / 3.:
-                empty_cells = self.empty_around(self.currentcell)
-                self.currentcell = empty_cells[self.rng.randint(
-                    len(empty_cells))]
-
-        state = self.tostate[self.currentcell]
-        done = state == self.realgoal
-
-        # statevec = np.zeros(104)
-        # statevec[state] = 1
-        # return statevec, float(done), False, None
-
-        return state, float(done), False, None
+        super(Fourrooms, self).__init__(nS, nA, P, isd)
 
     def _render(self, mode='human', close=False):
-        pass
+        if close:
+            return
+        outfile = StringIO() if mode == 'ansi' else sys.stdout
+
+        row, col = self.s // self.ncol, self.s % self.ncol
+        desc = self.desc.tolist()
+        desc = [[c.decode('utf-8') for c in line] for line in desc]
+        desc[row][col] = utils.colorize(desc[row][col], "red", highlight=True)
+        if self.lastaction is not None:
+            outfile.write("  ({})\n".format(["Left", "Down", "Right",
+                                             "Up"][self.lastaction]))
+        else:
+            outfile.write("\n")
+        outfile.write("\n".join(''.join(line) for line in desc) + "\n")
+
+        if mode != 'human':
+            return outfile
