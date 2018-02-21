@@ -3,13 +3,10 @@ A classic four room problem described in intro to RL book chap 9.
 Code adapted from frozen lake environment.
 """
 
-import numpy as np
 import logging
-import math
-import gym
 import sys
-from gym import spaces
-from gym.utils import seeding
+
+import numpy as np
 from gym import utils
 from gym.envs.toy_text import discrete
 
@@ -21,23 +18,14 @@ RIGHT = 2
 UP = 3
 
 MAPS = {
-    "9x9": [
-        "XXGXXXXXX",
-        "XOOOXOOOX",
-        "XOOOOOOOX",
-        "XOOOXOOOX",
-        "XXOXXXOXX",
-        "XOOOXOOOX",
-        "XOOOOOOOX",
-        "XOOOXSOOX",
-        "XXXXXXXXX",
-    ],
+    "9x9": ["XXGXXXXXX", "XOOOXOOOX", "XOOOOOOOX", "XOOOXOOOX", "XXOXXXOXX",
+        "XOOOXOOOX", "XOOOOOOOX", "XOOOXSOOX", "XXXXXXXXX", ],
 }
 
 
 class Fourrooms(discrete.DiscreteEnv):
     """
-    The agent must go through the doors to exit. 
+    The agent must go through the doors to exit.
     An example of a 9X9 world would be:
 
     XXGXXXXXX
@@ -52,13 +40,12 @@ class Fourrooms(discrete.DiscreteEnv):
 
     S : starting point
     X : Walls
-    G : goal 
+    G : goal
     O : Normal floor
 
     """
     metadata = {
-        'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second': 50
+        'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50
     }
 
     def __init__(self, desc=None, map_name="9x9"):
@@ -124,8 +111,8 @@ class Fourrooms(discrete.DiscreteEnv):
         desc = [[c.decode('utf-8') for c in line] for line in desc]
         desc[row][col] = utils.colorize(desc[row][col], "red", highlight=True)
         if self.lastaction is not None:
-            outfile.write("  ({})\n".format(["Left", "Down", "Right",
-                                             "Up"][self.lastaction]))
+            outfile.write("  ({})\n".format(
+                ["Left", "Down", "Right", "Up"][self.lastaction]))
         else:
             outfile.write("\n")
         outfile.write("\n".join(''.join(line) for line in desc) + "\n")
