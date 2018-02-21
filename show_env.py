@@ -15,7 +15,7 @@ def example(env):
     prng.seed(10)  # for print the location
     # Generate the episode
     ob = env.reset()
-    for t in range(100):
+    for t in range(1000000):
         env.render()
         a = env.action_space.sample()
         ob, rew, done, _ = env.step(a)
