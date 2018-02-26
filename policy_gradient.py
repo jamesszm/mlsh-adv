@@ -10,48 +10,23 @@ from test_env import *
 from utils.general import export_plot, get_logger
 
 
-def example(env):
-    """Show an example of gym
-        Parameters
-                ----------
-                env: gym.core.Environment
-                        Environment to play on. Must have nS, nA, and P as
-                        attributes.
-        """
-    env.seed(0)
-    from gym.spaces import prng
-    prng.seed(10)  # for print the location
+# noinspection PyAttributeOutsideInit
+class PolicyGradient(object):
+    def policy_network(mlp_input, output_size, scope, n_layers=config.n_layers,
+                       size=config.layer_size, output_activation=None):
+        out = mlp_input
+        with tf.variable_scope(scope):
+            for i in range(n_layers):
+                out = layers.fully_connected(out, size,
+                                             activation_fn=tf.nn.relu,
+                                             reuse=False)
 
-    for eps in range(100):
-        # Generate the episode
-        ob = env.reset()
-
-        for t in range(1000000):
-            env.render()
-            a = env.action_space.sample()
-            ob, rew, done, _ = env.step(a)
-            if done:
-                break
-        assert done
-        env.render()
-
-
-def master_sub(mlp_input, output_size, scope, n_layers=config.n_layers,
-               size=config.layer_size, output_activation=None):
-    out = mlp_input
-    with tf.variable_scope(scope):
-        for i in range(n_layers):
-            out = layers.fully_connected(out, size, activation_fn=tf.nn.relu,
+            out = layers.fully_connected(out, output_size,
+                                         activation_fn=output_activation,
                                          reuse=False)
 
-        out = layers.fully_connected(out, output_size,
-                                     activation_fn=output_activation,
-                                     reuse=False)
+        return out
 
-    return out
-
-
-class AUTOMLSH(object):
     def __init__(self, env, config, logger=None):
 
         if not os.path.exists(config.output_path):
@@ -64,7 +39,7 @@ class AUTOMLSH(object):
         self.env = env
 
         self.discrete = isinstance(env.action_space, gym.spaces.Discrete)
-        self.observation_dim = self.env.observation_space.shape[0]
+        self.observation_dim = 1
         self.action_dim = self.env.action_space.n if self.discrete else \
             self.env.action_space.shape[0]
 
@@ -86,19 +61,22 @@ class AUTOMLSH(object):
 
     def build_policy_network_op(self, scope="policy_network"):
         if self.discrete:
-            action_logits = master_sub(self.observation_placeholder,
-                                       self.action_dim, scope=scope)
-            self.sampled_action = [tf.squeeze(tf.multinomial(action_logits, 1))]
+            self.action_logits = self.policy_network(
+                self.observation_placeholder, self.action_dim, scope=scope)
+            self.sampled_action = tf.squeeze(
+                tf.multinomial(self.action_logits, 1), axis=1)
             self.logprob = -tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=self.action_placeholder, logits=action_logits)
+                labels=self.action_placeholder, logits=self.action_logits)
         else:
-            action_means = master_sub(self.observation_placeholder,
-                                      self.action_dim, scope=scope)
+            action_means = self.policy_network(self.observation_placeholder,
+                                               self.action_dim, scope=scope)
             log_std = tf.get_variable('log_std', shape=[self.action_dim],
                                       trainable=True)
+            action_std = tf.exp(log_std)
             multivariate = tfd.MultivariateNormalDiag(loc=action_means,
-                                                      scale_diag=log_std)
-            self.sampled_action = multivariate.sample()
+                                                      scale_diag=action_std)
+            self.sampled_action = tf.random_normal(
+                [self.action_dim]) * action_std + action_means
             self.logprob = multivariate.log_prob(self.action_placeholder)
 
     def add_loss_op(self):
@@ -110,7 +88,7 @@ class AUTOMLSH(object):
 
     def add_baseline_op(self, scope="baseline"):
         self.baseline = tf.squeeze(
-            master_sub(self.observation_placeholder, 1, scope=scope))
+            self.policy_network(self.observation_placeholder, 1, scope=scope))
         self.baseline_target_placeholder = tf.placeholder(tf.float32,
                                                           shape=None)
         self.baseline_loss = tf.losses.mean_squared_error(
@@ -169,15 +147,21 @@ class AUTOMLSH(object):
 
     def record_summary(self, t):
         fd = {
-            self.avg_reward_placeholder:  self.avg_reward,
-            self.max_reward_placeholder:  self.max_reward,
-            self.std_reward_placeholder:  self.std_reward,
+            self.avg_reward_placeholder: self.avg_reward,
+            self.max_reward_placeholder: self.max_reward,
+            self.std_reward_placeholder: self.std_reward,
             self.eval_reward_placeholder: self.eval_reward,
         }
         summary = self.sess.run(self.merged, feed_dict=fd)
         self.file_writer.add_summary(summary, t)
 
-    def sample_path(self, env, num_episodes=None):
+    def epsilon_greedy(self, action, eps):
+        if np.random.rand(1) < eps:
+            return self.env.action_space.sample()
+        else:
+            return action
+
+    def sample_path(self, env, num_episodes=None, eps=None):
         episode = 0
         episode_rewards = []
         paths = []
@@ -191,13 +175,17 @@ class AUTOMLSH(object):
             for step in range(self.config.max_ep_len):
                 states.append(state)
                 action = self.sess.run(self.sampled_action, feed_dict={
-                    self.observation_placeholder: states[-1][None]
+                    self.observation_placeholder: [[states[-1]]]
                 })[0]
+                action = self.epsilon_greedy(action=action,
+                                             eps=self.get_epsilon(t))
                 state, reward, done, info = env.step(action)
                 actions.append(action)
                 rewards.append(reward)
                 episode_reward += reward
                 t += 1
+                if done:
+                    print('DONE!')
                 if (done or step == self.config.max_ep_len - 1):
                     episode_rewards.append(episode_reward)
                     break
@@ -206,7 +194,7 @@ class AUTOMLSH(object):
 
             path = {
                 "observation": np.array(states), "reward": np.array(rewards),
-                "action":      np.array(actions)
+                "action": np.array(actions)
             }
             paths.append(path)
             episode += 1
@@ -245,9 +233,14 @@ class AUTOMLSH(object):
 
     def update_baseline(self, returns, observations):
         self.sess.run(self.update_baseline_op, feed_dict={
-            self.observation_placeholder:     observations,
+            self.observation_placeholder: observations,
             self.baseline_target_placeholder: returns
         })
+
+    def get_epsilon(self, t):
+        return max(config.min_epsilon,
+                   config.max_epsilon - float(t) / config.num_batches * (
+                       config.max_epsilon - config.min_epsilon))
 
     def train(self):
         last_record = 0
@@ -256,11 +249,12 @@ class AUTOMLSH(object):
         scores_eval = []
 
         for t in range(self.config.num_batches):
-            print(t, config.use_baseline)
-            paths, total_rewards = self.sample_path(self.env)
+            print(t, self.get_epsilon(t))
+            paths, total_rewards = self.sample_path(env=self.env,
+                                                    eps=self.get_epsilon(t))
             scores_eval = scores_eval + total_rewards
-            observations = np.concatenate(
-                [path["observation"] for path in paths])
+            observations = np.expand_dims(
+                np.concatenate([path["observation"] for path in paths]), axis=1)
             actions = np.concatenate([path["action"] for path in paths])
             rewards = np.concatenate([path["reward"] for path in paths])
             returns = self.get_returns(paths)
@@ -270,8 +264,8 @@ class AUTOMLSH(object):
                 self.update_baseline(returns, observations)
             self.sess.run(self.train_op, feed_dict={
                 self.observation_placeholder: observations,
-                self.action_placeholder:      actions,
-                self.advantage_placeholder:   advantages
+                self.action_placeholder: actions,
+                self.advantage_placeholder: advantages
             })
 
             if (t % self.config.summary_freq == 0):
@@ -321,5 +315,5 @@ class AUTOMLSH(object):
 
 if __name__ == "__main__":
     env = gym.make(config.env_name)
-    model = AUTOMLSH(env, config)
+    model = PolicyGradient(env, config)
     model.run()

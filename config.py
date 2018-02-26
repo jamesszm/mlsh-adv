@@ -10,7 +10,7 @@ class config():
     record = False
 
     batch_size_by_env = {
-        "Fourrooms-v1": 200
+        "Fourrooms-v1": 1000
     }
 
     lr_by_env = {
@@ -20,19 +20,20 @@ class config():
     gamma_by_env = {
         "Fourrooms-v1": 1.0
     }
-
+    max_epsilon = 0
+    min_epsilon = 0
     # model and training config
-    num_batches = 100  # number of batches trained on
+    num_batches = 1000  # number of batches trained on
     batch_size = batch_size_by_env[env_name]
     # number of steps used to compute each policy update
-    max_ep_len = min(1000, batch_size)  # maximum episode length
+    max_ep_len = min(10000, batch_size)  # maximum episode length
     learning_rate = lr_by_env[env_name]
     gamma = gamma_by_env[env_name]  # the discount factor
     use_baseline = True
     normalize_advantage = True
     # parameters for the policy and baseline models
-    n_layers = 4
-    layer_size = 64
+    n_layers = 1
+    layer_size = 16
     activation = tf.nn.relu
 
     # since we start new episodes for each batch
