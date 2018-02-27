@@ -10,10 +10,28 @@ from test_env import *
 from utils.general import export_plot, get_logger
 
 
-# noinspection PyAttributeOutsideInit
 class PolicyGradient(object):
-    def policy_network(mlp_input, output_size, scope, n_layers=config.n_layers,
-                       size=config.layer_size, output_activation=None):
+    def policy_network(self, mlp_input, output_size, scope,
+                       size=config.baseline_layer_size,
+                       n_layers=config.n_layers, output_activation=None):
+        out = mlp_input
+        with tf.variable_scope(scope):
+            for i in range(n_layers):
+                out = layers.fully_connected(out, size,
+                                             activation_fn=tf.nn.relu,
+                                             reuse=False)
+
+            out = layers.fully_connected(out, output_size,
+                                         activation_fn=output_activation,
+                                         reuse=False)
+
+        return out
+
+    def baseline_network(self, mlp_input, output_size, scope,
+                         n_layers=config.n_layers,
+                         size=config.baseline_layer_size,
+                         output_activation=None):
+
         out = mlp_input
         with tf.variable_scope(scope):
             for i in range(n_layers):
@@ -39,7 +57,12 @@ class PolicyGradient(object):
         self.env = env
 
         self.discrete = isinstance(env.action_space, gym.spaces.Discrete)
-        self.observation_dim = 1
+
+        if config.env_name == "Fourrooms-v1":
+            self.observation_dim = 1
+        else:
+            self.observation_dim = self.env.observation_space.shape[0]
+
         self.action_dim = self.env.action_space.n if self.discrete else \
             self.env.action_space.shape[0]
 
@@ -88,7 +111,7 @@ class PolicyGradient(object):
 
     def add_baseline_op(self, scope="baseline"):
         self.baseline = tf.squeeze(
-            self.policy_network(self.observation_placeholder, 1, scope=scope))
+            self.baseline_network(self.observation_placeholder, 1, scope=scope))
         self.baseline_target_placeholder = tf.placeholder(tf.float32,
                                                           shape=None)
         self.baseline_loss = tf.losses.mean_squared_error(
@@ -174,9 +197,15 @@ class PolicyGradient(object):
 
             for step in range(self.config.max_ep_len):
                 states.append(state)
-                action = self.sess.run(self.sampled_action, feed_dict={
-                    self.observation_placeholder: [[states[-1]]]
-                })[0]
+                if config.env_name == "Fourrooms-v1":
+                    action = self.sess.run(self.sampled_action, feed_dict={
+                        self.observation_placeholder: [[states[-1]]]
+                    })[0]
+                else:
+                    action = self.sess.run(self.sampled_action, feed_dict={
+                        self.observation_placeholder: states[-1][None]
+                    })[0]
+
                 action = self.epsilon_greedy(action=action,
                                              eps=self.get_epsilon(t))
                 state, reward, done, info = env.step(action)
@@ -184,8 +213,6 @@ class PolicyGradient(object):
                 rewards.append(reward)
                 episode_reward += reward
                 t += 1
-                if done:
-                    print('DONE!')
                 if (done or step == self.config.max_ep_len - 1):
                     episode_rewards.append(episode_reward)
                     break
@@ -253,8 +280,15 @@ class PolicyGradient(object):
             paths, total_rewards = self.sample_path(env=self.env,
                                                     eps=self.get_epsilon(t))
             scores_eval = scores_eval + total_rewards
-            observations = np.expand_dims(
-                np.concatenate([path["observation"] for path in paths]), axis=1)
+
+            if config.env_name == "Fourrooms-v1":
+                observations = np.expand_dims(
+                    np.concatenate([path["observation"] for path in paths]),
+                    axis=1)
+            else:
+                observations = np.concatenate(
+                    [path["observation"] for path in paths])
+
             actions = np.concatenate([path["action"] for path in paths])
             rewards = np.concatenate([path["reward"] for path in paths])
             returns = self.get_returns(paths)
@@ -314,6 +348,7 @@ class PolicyGradient(object):
 
 
 if __name__ == "__main__":
+    config = config('VanillaPolicyGradient')
     env = gym.make(config.env_name)
     model = PolicyGradient(env, config)
     model.run()
