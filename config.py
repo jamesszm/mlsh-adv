@@ -29,17 +29,11 @@ class config():
 
     record = True
 
-    batch_size_by_env = {
-        "Fourrooms-v1": 1000, "HalfCheetah-v1": 10000
-    }
+    batch_size_by_env = {"Fourrooms-v1": 1000, "HalfCheetah-v1": 10000}
 
-    lr_by_env = {
-        "Fourrooms-v1": 3e-2, "HalfCheetah-v1": 2.8e-2
-    }
+    lr_by_env = {"Fourrooms-v1": 3e-2, "HalfCheetah-v1": 2.8e-2}
 
-    gamma_by_env = {
-        "Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9
-    }
+    gamma_by_env = {"Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9}
     max_epsilon = 0
     min_epsilon = 0
     # model and training config
