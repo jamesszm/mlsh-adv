@@ -96,7 +96,7 @@ class Fourrooms(discrete.DiscreteEnv):
                         newstate = to_s(newrow, newcol)
                         newletter = desc[newrow, newcol]
                         done = bytes(newletter) in b'GH'
-                        rew = float(newletter == b'G')
+                        rew = float(newletter == b'G') * 100 - 1
                         li.append((1.0, newstate, rew, done))
 
         super(Fourrooms, self).__init__(nS, nA, P, isd)
