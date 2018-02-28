@@ -26,4 +26,3 @@ def example(env):
 
 if __name__ == "__main__":
     env = gym.make("Fourrooms-v1")
-
