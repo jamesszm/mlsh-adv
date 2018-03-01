@@ -24,18 +24,18 @@ class config():
     # Change env_name for the different experiments
     # env_name = "CartPole-v0"
     # env_name = "InvertedPendulum-v1"
-    # env_name = "Fourrooms-v1"
-    env_name = "HalfCheetah-v1"
+    env_name = "Fourrooms-v1"
+    # env_name = "HalfCheetah-v1"
 
-    record = True
+    record = False
 
     batch_size_by_env = {"Fourrooms-v1": 1000, "HalfCheetah-v1": 10000}
 
     lr_by_env = {"Fourrooms-v1": 3e-2, "HalfCheetah-v1": 2.8e-2}
 
     gamma_by_env = {"Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9}
-    max_epsilon = 0
-    min_epsilon = 0
+    max_epsilon = 0.9
+    min_epsilon = 0.1
     # model and training config
     num_batches = 1000  # number of batches trained on
     batch_size = batch_size_by_env[env_name]

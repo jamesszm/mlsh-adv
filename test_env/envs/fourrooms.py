@@ -69,7 +69,6 @@ class Fourrooms(discrete.DiscreteEnv):
         nS = nrow * ncol
 
         isd = np.array(desc == b'O').astype('float64').ravel()
-        isd /= isd.sum()
         P = {s: {a: [] for a in range(nA)} for s in range(nS)}
 
         def to_s(row, col):
@@ -109,6 +108,10 @@ class Fourrooms(discrete.DiscreteEnv):
                         li.append((1.0, newstate, rew, done))
 
         super(Fourrooms, self).__init__(nS, nA, P, isd)
+
+    def reset(self, seed=None):
+        np.random.seed(seed)
+        return super(Fourrooms, self).reset()
 
     def _render(self, mode='human', close=False):
         if close:
