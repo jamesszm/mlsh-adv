@@ -56,6 +56,7 @@ class PolicyGradient(object):
         self.config = config
         self.logger = logger
         self.batch_counter = 0
+        self.seed = None
         if logger is None:
             self.logger = get_logger(config.log_path)
         self.env = env
