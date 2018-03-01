@@ -34,10 +34,10 @@ class config():
     lr_by_env = {"Fourrooms-v1": 3e-2, "HalfCheetah-v1": 2.8e-2}
 
     gamma_by_env = {"Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9}
-    max_epsilon = 0.9
-    min_epsilon = 0.1
+    max_epsilon = 0.9  # make sure it's fair for PG w.r.t exploration.
+    min_epsilon = 0.0
     # model and training config
-    num_batches = 1000  # number of batches trained on
+    num_batches = 100  # number of batches trained on
     batch_size = batch_size_by_env[env_name]
     # number of steps used to compute each policy update
     max_ep_len = min(10000, batch_size)  # maximum episode length

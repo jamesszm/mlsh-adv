@@ -55,6 +55,7 @@ class PolicyGradient(object):
 
         self.config = config
         self.logger = logger
+        self.batch_counter = 0
         if logger is None:
             self.logger = get_logger(config.log_path)
         self.env = env
@@ -150,11 +151,7 @@ class PolicyGradient(object):
         self.eval_reward_placeholder = tf.placeholder(
             tf.float32, shape=(), name="eval_reward")
 
-        self.eval_reward_placeholder = tf.placeholder(
-            tf.float32, shape=(), name="test_avg_reward")
-
         tf.summary.scalar("Avg_Reward", self.avg_reward_placeholder)
-        tf.summary.scalar("Test_Avg_Reward", self.avg_reward_placeholder)
         tf.summary.scalar("Max_Reward", self.max_reward_placeholder)
         tf.summary.scalar("Std_Reward", self.std_reward_placeholder)
         tf.summary.scalar("Eval_Reward", self.eval_reward_placeholder)
@@ -324,7 +321,8 @@ class PolicyGradient(object):
 
             if (t % self.config.summary_freq == 0):
                 self.update_averages(total_rewards, scores_eval)
-                self.record_summary(t)
+                self.record_summary(self.batch_counter)
+            self.batch_counter = self.batch_counter + 1
 
             avg_reward = np.mean(total_rewards)
             sigma_reward = np.sqrt(np.var(total_rewards) / len(total_rewards))
@@ -345,7 +343,7 @@ class PolicyGradient(object):
         if env == None:
             env = self.env
         paths, rewards = self.sample_path(env, num_episodes)
-        test_avg_reward = np.mean(rewards)
+        avg_reward = np.mean(rewards)
         sigma_reward = np.sqrt(np.var(rewards) / len(rewards))
         msg = "Average reward: {:04.2f} +/- {:04.2f}".format(
             avg_reward, sigma_reward)
