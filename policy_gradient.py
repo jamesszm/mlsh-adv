@@ -55,6 +55,7 @@ class PolicyGradient(object):
 
         self.config = config
         self.logger = logger
+        self.batch_counter = 0
         if logger is None:
             self.logger = get_logger(config.log_path)
         self.env = env
@@ -320,7 +321,8 @@ class PolicyGradient(object):
 
             if (t % self.config.summary_freq == 0):
                 self.update_averages(total_rewards, scores_eval)
-                self.record_summary(t)
+                self.record_summary(self.batch_counter)
+            self.batch_counter = self.batch_counter + 1
 
             avg_reward = np.mean(total_rewards)
             sigma_reward = np.sqrt(np.var(total_rewards) / len(total_rewards))
