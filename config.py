@@ -37,7 +37,7 @@ class config():
     max_epsilon = 0.9
     min_epsilon = 0.1
     # model and training config
-    num_batches = 1000  # number of batches trained on
+    num_batches = 10  # number of batches trained on
     batch_size = batch_size_by_env[env_name]
     # number of steps used to compute each policy update
     max_ep_len = min(10000, batch_size)  # maximum episode length
