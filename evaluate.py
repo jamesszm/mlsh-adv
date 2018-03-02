@@ -6,12 +6,13 @@ import random
 from test_env import *
 from policy_gradient import *
 from recurrent_mlsh_v1 import *
+from simple_lstm_pg import *
 
 if __name__ == "__main__":
     # Sample task and train
-    config = config('RecurrentMLSH-v1')
+    config = config('PG-v1')
     env = gym.make(config.env_name)
-    model = RecurrentMLSH(env, config)
+    model = PolicyGradient(env, config)
 
     model.initialize()
     # In each training task, the env should not change.
