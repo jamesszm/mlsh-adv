@@ -2,6 +2,7 @@ import tensorflow as tf
 
 
 class config():
+    # TODO(bohan): Make config argparse flags in the main python files.
     def __init__(self, algorithm=None):
         if not algorithm:
             raise Exception()
@@ -30,33 +31,23 @@ class config():
     # env_name = "CartPole-v0"
     # env_name = "InvertedPendulum-v1"
     # env_name = "Fourrooms-v1"
-    # env_name = "Fourrooms-fixed-start-state-v1"
-    # env_name = "Fourrooms-random-start-state-v1"
     # env_name = "HalfCheetah-v1"
     env_name = "Ant-v1"
 
     batch_size_by_env = {
-        "Fourrooms-v1": 1000, "Fourrooms-fixed-start-state-v1": 1000,
-        "Fourrooms-random-start-state-v1": 1000, "HalfCheetah-v1": 50000,
-        "Ant-v1": 60000
+        "Fourrooms-v1": 1000, "HalfCheetah-v1": 50000, "Ant-v1": 60000
     }
 
     lr_by_env = {
-        "Fourrooms-v1": 3e-2, "Fourrooms-fixed-start-state-v1": 3e-2,
-        "Fourrooms-random-start-state-v1": 3e-2, "HalfCheetah-v1": 3e-2,
-        "Ant-v1": 3e-2
+        "Fourrooms-v1": 3e-2, "HalfCheetah-v1": 3e-2, "Ant-v1": 3e-2
     }
 
     gamma_by_env = {
-        "Fourrooms-v1": 1.0, "Fourrooms-fixed-start-state-v1": 1.0,
-        "Fourrooms-random-start-state-v1": 1.0, "HalfCheetah-v1": 0.9,
-        "Ant-v1": 0.8
+        "Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9, "Ant-v1": 0.8
     }
 
     num_batches_by_env = {
-        "Fourrooms": 100, "Fourrooms-fixed-start-state-v1": 100,
-        "Fourrooms-random-start-state-v1": 100, "HalfCheetah-v1": 1000,
-        "Ant-v1": 1000
+        "Fourrooms": 100, "HalfCheetah-v1": 1000, "Ant-v1": 1000
     }
 
     examine_master = False
