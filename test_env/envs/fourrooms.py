@@ -28,7 +28,7 @@ MAPS = {
         "XOOOOOOOX",
         "XOOOXOOOX",
         "XXXXXXXXX",
-    ],
+    ]
 }
 
 

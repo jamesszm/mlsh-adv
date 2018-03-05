@@ -41,7 +41,9 @@ class RecurrentMLSH(PolicyGradient):
         last_output = self.out[:, -1, :]
 
         self.chosen_index = tf.argmax(last_output, axis=1)
-        self.weights = tf.nn.softmax(logits=last_output, dim=1)
+        # self.weights = tf.nn.softmax(logits=last_output, dim=
+        self.weights = tf.one_hot(indices=self.chosen_index,
+                                  depth=config.num_sub_policies)
 
         final_policy = tf.reduce_sum(
             tf.expand_dims(self.weights, axis=2) * self.sub_policies, axis=1)
@@ -54,6 +56,6 @@ class RecurrentMLSH(PolicyGradient):
 
 if __name__ == "__main__":
     env = gym.make(config.env_name)
-    config = config('RecurrentMLSH-v1')
+    config = config('RecurrentMLSH-v2')
     model = RecurrentMLSH(env, config)
     model.run()

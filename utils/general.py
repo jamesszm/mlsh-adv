@@ -21,7 +21,8 @@ def export_plot(ys, ylabel, title, filename):
     plt.xlabel("Training Episode")
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.savefig(filename)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
     plt.close()
 
 

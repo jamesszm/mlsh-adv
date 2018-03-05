@@ -20,14 +20,18 @@ class RecurrentMLSH(PolicyGradient):
                                            [1, config.num_sub_policies, 1])
             num_actions = self.env.action_space.shape[0]
 
-        rnn_cell = rnn.BasicRNNCell(num_units=num_actions)
+        rnn_cell = rnn.MultiRNNCell(
+            [rnn.BasicRNNCell(num_units=num_actions) for i in
+             range(config.num_RNN)], state_is_tuple=True)
 
         self.sub_policies, states = tf.nn.dynamic_rnn(cell=rnn_cell,
                                                       inputs=self.state_embedding,
                                                       dtype=tf.float32,
                                                       scope='subpolicy')
 
-        lstm_cell = rnn.BasicLSTMCell(num_units=config.num_sub_policies)
+        lstm_cell = rnn.MultiRNNCell(
+            [rnn.BasicLSTMCell(num_units=config.num_sub_policies) for i in
+             range(config.num_LSTM)], state_is_tuple=True)
 
         concatenated = tf.concat([self.sub_policies, self.state_embedding],
                                  axis=2)
@@ -40,8 +44,12 @@ class RecurrentMLSH(PolicyGradient):
                                              dtype=tf.float32, scope='master')
         last_output = self.out[:, -1, :]
 
-        self.chosen_index = tf.argmax(last_output, axis=1)
-        self.weights = tf.nn.softmax(logits=last_output, dim=1)
+        if config.weight_average:
+            self.weights = tf.nn.softmax(logits=last_output, dim=1)
+        else:
+            self.chosen_index = tf.argmax(last_output, axis=1)
+            self.weights = tf.one_hot(indices=self.chosen_index,
+                                      depth=config.num_sub_policies)
 
         final_policy = tf.reduce_sum(
             tf.expand_dims(self.weights, axis=2) * self.sub_policies, axis=1)
@@ -54,6 +62,6 @@ class RecurrentMLSH(PolicyGradient):
 
 if __name__ == "__main__":
     env = gym.make(config.env_name)
-    config = config('RecurrentMLSH-v1')
+    config = config('RecurrentMLSH-v3')
     model = RecurrentMLSH(env, config)
     model.run()
