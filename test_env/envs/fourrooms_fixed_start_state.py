@@ -18,17 +18,15 @@ RIGHT = 2
 UP = 3
 
 MAPS = {
-    "9x9": [
-        "XXGXXXXXX",
-        "XOOOXOOOX",
-        "XOOOOOOOX",
-        "XOOOXOOOX",
-        "XXOXXXOXX",
-        "XOOOXOOOX",
-        "XOOOOOOOX",
-        "XOOOXOOOX",
-        "XXXXXXXXX",
-    ]
+    "9x9": ["XXGXXXXXX",
+            "XOOOXOOOX",
+            "XOOOOOOOX",
+            "XOOOXOOOX",
+            "XXOXXXOXX",
+            "XOOOXOOOX",
+            "XOOOOOOOX",
+            "XOOOXSOOX",
+            "XXXXXXXXX", ],
 }
 
 
@@ -44,17 +42,17 @@ class Fourrooms(discrete.DiscreteEnv):
     XXOXXXOXX
     XOOOXOOOX
     XOOOOOOOX
-    XOOOXOOOX
+    XOOOXSOOX
     XXXXXXXXX
 
+    S : starting point
     X : Walls
     G : goal
-    O : Normal floor, any normal ground can be a starting point.
+    O : Normal floor
 
     """
     metadata = {
-        'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second': 50
+        'render.modes': ['human', 'rgb_array'], 'video.frames_per_second': 50
     }
 
     def __init__(self, desc=None, map_name="9x9"):
@@ -68,7 +66,8 @@ class Fourrooms(discrete.DiscreteEnv):
         nA = 4
         nS = nrow * ncol
 
-        isd = np.array(desc == b'O').astype('float64').ravel()
+        isd = np.array(desc == b'S').astype('float64').ravel()
+        isd /= isd.sum()
         P = {s: {a: [] for a in range(nA)} for s in range(nS)}
 
         def to_s(row, col):
@@ -109,10 +108,6 @@ class Fourrooms(discrete.DiscreteEnv):
 
         super(Fourrooms, self).__init__(nS, nA, P, isd)
 
-    def reset(self, seed=None):
-        np.random.seed(seed)
-        return super(Fourrooms, self).reset()
-
     def _render(self, mode='human', close=False):
         if close:
             return
@@ -123,8 +118,8 @@ class Fourrooms(discrete.DiscreteEnv):
         desc = [[c.decode('utf-8') for c in line] for line in desc]
         desc[row][col] = utils.colorize(desc[row][col], "red", highlight=True)
         if self.lastaction is not None:
-            outfile.write("  ({})\n".format(["Left", "Down", "Right",
-                                             "Up"][self.lastaction]))
+            outfile.write("  ({})\n".format(
+                ["Left", "Down", "Right", "Up"][self.lastaction]))
         else:
             outfile.write("\n")
         outfile.write("\n".join(''.join(line) for line in desc) + "\n")
