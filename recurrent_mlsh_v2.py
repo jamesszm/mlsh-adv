@@ -3,7 +3,7 @@ import tensorflow.contrib.rnn as rnn
 from pg import *
 
 
-class RecurrentMLSH(PolicyGradient):
+class RecurrentMLSHV2(PolicyGradient):
     def policy_network(self, mlp_input, output_size, scope,
                        size=config.baseline_layer_size,
                        n_layers=config.n_layers, output_activation=None):
@@ -57,5 +57,5 @@ class RecurrentMLSH(PolicyGradient):
 if __name__ == "__main__":
     env = gym.make(config.env_name)
     config = config('RecurrentMLSH-v2')
-    model = RecurrentMLSH(env, config)
+    model = RecurrentMLSHV2(env, config)
     model.run()

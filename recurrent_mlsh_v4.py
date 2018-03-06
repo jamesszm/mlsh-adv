@@ -3,7 +3,7 @@ import tensorflow.contrib.rnn as rnn
 from pg import *
 
 
-class RecurrentMLSH(PolicyGradient):
+class RecurrentMLSHV4(PolicyGradient):
     def policy_network(self, mlp_input, output_size, scope,
                        size=config.baseline_layer_size,
                        n_layers=config.n_layers, output_activation=None):
@@ -32,7 +32,7 @@ class RecurrentMLSH(PolicyGradient):
         self.state_embedding = self.state_embedding[:, :num_sub_policies, :]
         rnn_cell = rnn.MultiRNNCell(
             [rnn.BasicRNNCell(num_units=num_actions) for i in
-             range(config.num_RNN)], state_is_tuple=True)
+             range(config.num_sub_policy_layers)], state_is_tuple=True)
 
         self.sub_policies, states = tf.nn.dynamic_rnn(cell=rnn_cell,
                                                       inputs=self.state_embedding,
@@ -44,7 +44,7 @@ class RecurrentMLSH(PolicyGradient):
 
         lstm_cell = rnn.MultiRNNCell(
             [rnn.BasicLSTMCell(num_units=config.max_num_sub_policies) for i in
-             range(config.num_LSTM)], state_is_tuple=True)
+             range(config.num_master_layers)], state_is_tuple=True)
 
         concatenated = tf.concat([self.sub_policies, self.state_embedding],
                                  axis=2)
@@ -78,5 +78,5 @@ class RecurrentMLSH(PolicyGradient):
 if __name__ == "__main__":
     env = gym.make(config.env_name)
     config = config('RecurrentMLSH-v4')
-    model = RecurrentMLSH(env, config)
+    model = RecurrentMLSHV4(env, config)
     model.run()
