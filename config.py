@@ -30,24 +30,24 @@ class config():
 
     # env_name = "CartPole-v0"
     # env_name = "InvertedPendulum-v1"
-    # env_name = "Fourrooms-v1"
+    env_name = "Fourrooms-v1"
     # env_name = "HalfCheetah-v1"
-    env_name = "Ant-v1"
+    # env_name = "Ant-v1"
 
     batch_size_by_env = {
-        "Fourrooms-v1": 1000, "HalfCheetah-v1": 50000, "Ant-v1": 60000
+        "Fourrooms-v1": 1000,
+        "HalfCheetah-v1": 50000,
+        "Ant-v1": 60000
     }
 
-    lr_by_env = {
-        "Fourrooms-v1": 3e-2, "HalfCheetah-v1": 3e-2, "Ant-v1": 3e-2
-    }
+    lr_by_env = {"Fourrooms-v1": 3e-2, "HalfCheetah-v1": 3e-2, "Ant-v1": 3e-2}
 
-    gamma_by_env = {
-        "Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9, "Ant-v1": 0.8
-    }
+    gamma_by_env = {"Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9, "Ant-v1": 0.8}
 
     num_batches_by_env = {
-        "Fourrooms": 100, "HalfCheetah-v1": 1000, "Ant-v1": 1000
+        "Fourrooms-v1": 100,
+        "HalfCheetah-v1": 1000,
+        "Ant-v1": 1000
     }
 
     examine_master = False
@@ -74,6 +74,7 @@ class config():
     num_LSTM = 4
     weight_average = False
     activation = tf.nn.relu
+    analyze_pg_with_mlsh = False
 
     assert max_ep_len <= batch_size
     if max_ep_len < 0:

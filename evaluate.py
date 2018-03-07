@@ -4,7 +4,7 @@ Setup the meta-learning task evluation over a particular algorithm.
 
 import random
 from test_env import *
-from policy_gradient import *
+from pg import *
 from recurrent_mlsh_v1 import *
 from simple_lstm_pg import *
 
