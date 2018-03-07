@@ -1,6 +1,6 @@
 import tensorflow.contrib.rnn as rnn
 
-from policy_gradient import *
+from pg import *
 from test_env import *
 
 
