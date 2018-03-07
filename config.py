@@ -55,7 +55,7 @@ class config():
     record = False
     unique_key = ""
     render = False
-    max_epsilon = 0.0
+    max_epsilon = 0.9
     min_epsilon = 0.0
     freeze_sub_policy = False
     sub_policy_index = -1  # -1 means activates master policy
@@ -66,15 +66,14 @@ class config():
     gamma = gamma_by_env[env_name]
     use_baseline = True
     normalize_advantage = True
-    n_layers = 16
-    baseline_layer_size = 128
+    n_layers = 1
+    baseline_layer_size = 16
     max_num_sub_policies = 10
-    num_sub_policies = 16
+    num_sub_policies = 4
     num_RNN = 8
     num_LSTM = 4
     weight_average = False
     activation = tf.nn.relu
-    analyze_pg_with_mlsh = False
 
     assert max_ep_len <= batch_size
     if max_ep_len < 0:
