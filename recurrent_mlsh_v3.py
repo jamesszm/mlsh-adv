@@ -4,11 +4,15 @@ from pg import *
 
 
 class RecurrentMLSHV3(PolicyGradient):
-    def single_cell(self, num_units, cell):
-        if cell == 'RNN':
-            return rnn.BasicRNNCell(num_units=num_units)
-        elif cell == 'LSTM':
-            return rnn.BasicLSTMCell(num_units=num_units)
+    def single_cell(self, num_units, cell_type, name):
+        if cell_type == 'RNN':
+            rnn_cell = rnn.BasicRNNCell(num_units=num_units, name=name)
+            rnn_cell.zero_state(1, tf.float32)
+            return rnn_cell
+        elif cell_type == 'LSTM':
+            lstm_cell = rnn.BasicLSTMCell(num_units=num_units, name=name)
+            lstm_cell.zero_state(1, tf.float32)
+            return lstm_cell
         else:
             raise Exception()
 

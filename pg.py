@@ -233,9 +233,11 @@ class PolicyGradient(object):
                         rooms_and_sub_policies[room] = []
                     rooms_and_sub_policies[room].append(chosen_sub_policy)
                 else:
-                    action = self.sess.run(self.sampled_action, feed_dict={
+                    _, action = \
+                    self.sess.run([self.p, self.sampled_action], feed_dict={
                         self.observation_placeholder: states[-1][None]
-                    })[0]
+                    })
+                    action = action[0]
 
                 action = self.epsilon_greedy(action=action,
                                              eps=self.get_epsilon(t))

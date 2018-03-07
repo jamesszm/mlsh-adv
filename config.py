@@ -30,26 +30,30 @@ class config():
         self.record_path = output_path
         self.output_path = output_path
 
-    # env_name = "CartPole-v0"
+    env_name = "CartPole-v0"
     # env_name = "InvertedPendulum-v1"
     # env_name = "Fourrooms-v1"
     # env_name = "HalfCheetah-v1"
-    env_name = "Ant-v1"
+    # env_name = "Ant-v1"
 
     batch_size_by_env = {
-        "Fourrooms-v1": 1000, "HalfCheetah-v1": 50000, "Ant-v1": 60000
+        "CartPole-v0": 1000, "Fourrooms-v1": 1000, "HalfCheetah-v1": 50000, \
+        "Ant-v1": 60000
     }
 
     lr_by_env = {
-        "Fourrooms-v1": 3e-2, "HalfCheetah-v1": 3e-2, "Ant-v1": 3e-2
+        "CartPole-v0": 3e-2, "Fourrooms-v1": 3e-2, "HalfCheetah-v1": 3e-2,
+        "Ant-v1": 3e-2
     }
 
     gamma_by_env = {
-        "Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9, "Ant-v1": 0.8
+        "CartPole-v0": 1.0, "Fourrooms-v1": 1.0, "HalfCheetah-v1": 0.9,
+        "Ant-v1": 0.8
     }
 
     num_batches_by_env = {
-        "Fourrooms": 100, "HalfCheetah-v1": 1000, "Ant-v1": 1000
+        "CartPole-v0": 1000, "Fourrooms-v1": 100, "HalfCheetah-v1": 1000,
+        "Ant-v1": 1000
     }
 
     examine_master = False
@@ -63,14 +67,14 @@ class config():
     sub_policy_index = -1  # -1 means activates master policy
     num_batches = num_batches_by_env[env_name]
     batch_size = batch_size_by_env[env_name]
-    max_ep_len = min(10000, batch_size)
+    max_ep_len = min(1000000, batch_size)
     learning_rate = lr_by_env[env_name]
     gamma = gamma_by_env[env_name]
     use_baseline = True
     normalize_advantage = True
     n_layers = 4
     baseline_layer_size = 32
-    max_num_sub_policies = 10
+    max_num_sub_policies = 20
     num_sub_policies = 4
 
     sub_policy_network = 'LSTM'
