@@ -123,23 +123,48 @@ class RecurrentMLSHV5(RecurrentMLSHV4):
                                              dtype=tf.float32, scope='master')
 
         # self.out => (batch size, max_length, max_num_sub)
-        # self.last_output = self.out[:, max_length - 1, :]
 
-        list_of_outs = tf.unstack(self.out, num=batch_size)
-        # list_of_outs => [(max_length, max_num_sub), ...]
-        indices = []
-        for i in range(batch_size):
-            print(i)
-            out = list_of_outs[i]
-            # out => (max_length, max_num_sub)
-            last_output = out[length[i] - 1, :length[i]]
-            indices.append(tf.argmax(last_output))
+        ranges = tf.expand_dims(
+            tf.tile(tf.expand_dims(tf.range(max_length), axis=0),
+                    [batch_size, 1]), axis=2)
+        # ranges => (batch size, max_length, 1)
+        mask = (tf.equal(ranges,
+                         tf.expand_dims(tf.expand_dims(length - 1, axis=1),
+                                        axis=2)))
+        # mask => (batch size, max_length, 1)
+
+        candidate_logits = tf.reduce_sum(self.out * tf.cast(mask, tf.float32),
+                                         axis=1)
+        # candidate logits => (batch size, max_num_sub)
+
+        logit_ranges = tf.tile(
+            tf.expand_dims(tf.range(config.max_num_sub_policies), axis=0),
+            [batch_size, 1])
+        # logit ranges => (batch size, max_num_sub)
+
+        logit_mask = (logit_ranges < tf.expand_dims(length - 1, axis=1))
+        negative_logit_mask = (
+            logit_ranges >= tf.expand_dims(length - 1, axis=1))
+        # negative_logit_mask, logit mask => (batch size, max_num_sub)
+
+        mins = tf.reduce_min(candidate_logits, axis=1, keep_dims=True)
+        # mins => (batch size, 1)
+
+        reset_logits = candidate_logits * tf.cast(logit_mask, tf.float32)
+        # reset_logits => (batch size, max_num_sub)
+
+        offset = tf.cast(negative_logit_mask, tf.float32) * mins
+        # offset => (batch size, max_num_sub)
+
+        logits = reset_logits + offset
 
         if config.weight_average:
             self.weights = tf.nn.softmax(logits=self.last_output, dim=1)
         else:
-            # self.chosen_index = tf.argmax(self.last_output, axis=1)
-            self.chosen_index = tf.stack(indices)
+            self.chosen_index = tf.cast(tf.argmax(logits, axis=1), tf.int32)
+            tf.Assert(tf.reduce_sum(
+                tf.cast(self.chosen_index < length, tf.int32)) == batch_size,
+                      [self.chosen_index, length])
             self.weights = tf.one_hot(indices=self.chosen_index,
                                       depth=max_length)
 

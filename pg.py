@@ -233,8 +233,7 @@ class PolicyGradient(object):
                         rooms_and_sub_policies[room] = []
                     rooms_and_sub_policies[room].append(chosen_sub_policy)
                 else:
-                    _, action = \
-                    self.sess.run([self.p, self.sampled_action], feed_dict={
+                    action = self.sess.run(self.sampled_action, feed_dict={
                         self.observation_placeholder: states[-1][None]
                     })
                     action = action[0]
@@ -356,6 +355,7 @@ class PolicyGradient(object):
 
             if self.config.use_baseline:
                 self.update_baseline(returns, observations)
+
             self.sess.run(self.train_op, feed_dict={
                 self.observation_placeholder: observations,
                 self.action_placeholder: actions,
@@ -365,7 +365,8 @@ class PolicyGradient(object):
             if t % self.config.summary_freq == 0:
                 self.update_averages(total_rewards, scores_eval)
                 self.record_summary(self.batch_counter)
-            self.batch_counter = self.batch_counter + 1
+
+            self.batch_counter += 1
 
             avg_reward = np.mean(total_rewards)
             sigma_reward = np.sqrt(np.var(total_rewards) / len(total_rewards))
